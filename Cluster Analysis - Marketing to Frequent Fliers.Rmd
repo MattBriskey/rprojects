@@ -1,0 +1,99 @@
+---
+title: 'Cluster Analysis: Marketing to Frequent Fliers'
+author: "Matt Briskey"
+date: "`r Sys.Date()`"
+output: html_document
+---
+Problem 4 - Airline Frequent Fliers
+
+**A. Apply hierarchical clustering with Euclidean distance and Ward’s method. Make sure to normalize the data first. How many clusters appear?**
+
+Read the file
+```{r}
+
+input<- read.csv("G:/My Drive/MSDA/DATA 610 Big Data Analytics/Rdata/Rdata/EastWestAirlinesCluster.csv",header=TRUE)
+```
+
+Exclude unwanted columns
+```{r}
+mydata<- input[1:3999,2:12]
+```
+
+Normmalize the data
+```{r}
+normalized_data<- scale(mydata)
+```
+
+Calculate the euclidean distance using Ward's method
+```{r}
+d <- dist(normalized_data, method = "euclidean") 
+fit <- hclust(d, method="ward.D2")
+```
+
+Display the dendrogram and outline the three clusters in blue
+```{r}
+plot(fit)
+rect.hclust(fit, k=3, border="blue")
+```
+
+_Three clusters appear as can be seen in the dendrogram above._
+
+**B. What would happen if the data were not normalized?**
+
+_If the data weren’t normalized, the data with larger values/scale will skew the distance calculated and therefore the clusters._
+
+**C. Compare the cluster centroid to characterize the different clusters, and try to give each cluster a label.**
+```{r}
+d <- dist(normalized_data, method = "euclidean") 
+fit <- hclust(d, method="complete")
+options(scipen=99999999)
+
+groups <- cutree(fit, k=3)
+
+clust.centroid = function(i, dat, groups) {
+  ind = (groups == i)
+  colMeans(dat[ind,])
+}
+sapply(unique(groups), clust.centroid, mydata, groups)
+```
+
+<i>
+1. Cluster 1 – Lowest number of bonus_miles and lowest number of non-flight bonus transactions
+2. Cluster 2 – Largest number of non-flight bonus transactions (bonus_miles) and highest number of miles eligible for award travel (balance)
+3. Cluster 3 – Frequent fliers  but have enrolled more recently than the first two clusters (highest Flight_trans_12, lowest days_since_enroll)
+</i>
+
+
+**D. To check the stability of clusters, remove a random 5% of the data x (by taking a random sample of 95% of the records), and repeat the analysis. Does the same picture emerge?**
+
+
+Outline the three clusters in blue
+```{r}
+normalized_data_95 <- scale(mydata[sample(nrow(mydata), nrow(mydata)*.95), ])
+d <- dist(normalized_data_95, method = "euclidean") 
+fit <- hclust(d, method="ward.D2")
+plot(fit)
+rect.hclust(fit, k=3, border="blue")
+```
+
+
+```{r}
+clust.centroid = function(i, dat, groups) {
+  ind = (groups == i)
+  colMeans(dat[ind,])
+}
+sapply(unique(groups), clust.centroid, mydata, groups)
+```
+_Using a random sample of 95% of the records changes the clusters as can be seen above._
+
+**E. Use k-means clustering with the number of clusters that you found above. Does the same picture emerge?**
+```{r}
+fit <- kmeans(mydata, centers=3, iter.max=10)
+t(fit$centers)
+```
+
+_The same picture does not emerge using k-means clustering.  The k-means clusters can be seen above._
+
+**F. Which clusters would you target for offers, and what types of offers would you target to customers in that cluster?**
+
+_I would target the k-means cluster #1 because they have the largest balance and have been enrolled in the program the longest so they are more likely the frequent fliers._ 
